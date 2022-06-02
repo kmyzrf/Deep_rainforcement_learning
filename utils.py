@@ -1,4 +1,4 @@
-import collections
+import collections # handle dq objects
 import cv2
 
 import numpy as np
@@ -33,8 +33,8 @@ def plot_learning_curve(x, scores, epsilons, filename):
 	plt.savefig(filename)
 
 class RepeatActionAndMaxFrame(gym.Wrapper):
-	def __init__(self, env=None, repeat=4, clip_reward=False, no_ops=0,
-				 fire_first=False):
+	def __init__(self, env=None, repeat=4, clip_reward=False,
+				 no_ops=0, fire_first=False):
 		super(RepeatActionAndMaxFrame, self).__init__(env)
 		self.repeat = repeat
 		self.shape = env.observation_space.low.shape
@@ -43,6 +43,7 @@ class RepeatActionAndMaxFrame(gym.Wrapper):
 		self.no_ops = no_ops
 		self.fire_first = fire_first
 
+	# conpute total rewards to eatch step
 	def step(self, action):
 		t_reward = 0.0
 		done = False
@@ -59,13 +60,15 @@ class RepeatActionAndMaxFrame(gym.Wrapper):
 		max_frame = np.maximum(self.frame_buffer[0], self.frame_buffer[1])
 		return max_frame, t_reward, done, info
 	
+	# reset environment
 	def reset(self):
 		obs = self.env.reset()
 		no_ops = np.random.randint(self.no_ops)+1 if self.no_ops > 0 else 0
 		for _ in range(no_ops):
 			_, _, done, _ = self.env.step(0)
 			if done:
-				self.env.rese()
+				self.env.reset()
+		# make fire using assert
 		if self.fire_first:
 			assert self.env.unwarapped.get_action_meanings()[1] == 'FIRE'
 			obs, _, _, _ = self.env.step(1)
@@ -80,11 +83,12 @@ class PreprocessFrame(gym.ObservationWrapper):
 		super(PreprocessFrame, self).__init__(env)
 		self.shape = (shape[2], shape[0], shape[1])
 		self.observation_space = gym.spaces.Box(low=0.0, high=1.0,
-												shape=self.shape, dtype=np.float32)
+									shape=self.shape, dtype=np.float32)
 		
 
+	# conpute new observation from old one
 	def observation(self, obs):
-		new_frame = cv2.cvtColor(obs, cv2.COLOR_BGR2GRAY)
+		new_frame = cv2.cvtColor(obs, cv2.COLOR_RGB2GRAY)
 		resized_screen = cv2.resize(new_frame, self.shape[1:],
 									interpolation=cv2.INTER_AREA)
 		new_obs = np.array(resized_screen, dtype=np.uint8).reshape(self.shape)
@@ -95,12 +99,13 @@ class PreprocessFrame(gym.ObservationWrapper):
 class StackFrames(gym.ObservationWrapper):
 	def __init__(self, env, repeat):
 		super(StackFrames, self).__init__(env)
-		self.obsercation_space = gym.spaces.Box(
+		self.observation_space = gym.spaces.Box(
 							env.observation_space.low.repeat(repeat, axis=0),
 							env.observation_space.high.repeat(repeat, axis=0),
 							dtype=np.float32)
 		self.stack = collections.deque(maxlen=repeat)
 
+	# make reseted stack
 	def reset(self):
 		self.stack.clear()
 		observation = self.env.reset()
@@ -109,11 +114,13 @@ class StackFrames(gym.ObservationWrapper):
 
 		return np.array(self.stack).reshape(self.observation_space.low.shape)
 	
+	# compute stack from the observation
 	def observation(self, observation):
 		self.stack.append(observation)
 
 		return np.array(self.stack).reshape(self.observation_space.low.shape)
 
+# make envoironment
 def make_env(env_name, shape=(84,84,1), repeat=4, clip_rewards=False,
 			no_ops=0, fire_first=False):
 	env = gym.make(env_name)

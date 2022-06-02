@@ -35,7 +35,7 @@ class DQNAgent():
 								   chkpt_dir=self.chkpt_dir)
 		
 	def choose_action(self, observation):
-		if np.tandom() > self.epsilon:
+		if np.random.random() > self.epsilon:
 			state = T.tensor([observation], dtype=T.float).to(self.q_eval.device)
 			actions = self.q_eval.forward(state)
 			action = T.argmax(actions).item()
@@ -54,7 +54,7 @@ class DQNAgent():
 		states = T.tensor(state).to(self.q_eval.device)
 		rewards = T.tensor(reward).to(self.q_eval.device)
 		dones = T.tensor(done).to(self.q_eval.device)
-		actions = T.tensor(action.to(self.q_eval.device))
+		actions = T.tensor(action).to(self.q_eval.device)
 		states_ = T.tensor(new_state).to(self.q_eval.device)
 
 		return states, actions, rewards, states_, dones
@@ -86,14 +86,16 @@ class DQNAgent():
 
 		states, actions, rewards, states_, dones = self.sample_memory()
 
-		#dims -> batchsize * Nactions
 		indices = np.arange(self.batch_size)
-		q_pred = self.q_eval.forward(states)[actions]
-		q_next =self.q_next.forward(states_).max(dim=1)[0]
+		q_pred = self.q_eval.forward(states)[indices, actions]
+		q_next = self.q_next.forward(states_).max(dim=1)[0]
 
 		q_next[dones] = 0.0
 		q_target = rewards + self.gamma*q_next
+		
 		loss = self.q_eval.loss(q_target, q_pred).to(self.q_eval.device)
 		loss.backward()
 		self.q_eval.optimizer.step()
 		self.learn_step_counter += 1
+
+		self.decrement_epsilon()
