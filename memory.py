@@ -7,10 +7,10 @@ class ReplayBuffer():
 		self.state_memory = np.zeros((self.mem_size, *input_shape),
 									  dtype=np.float32)
 		self.new_state_memory = np.zeros((self.mem_size, *input_shape),
-											dtype=np.float32)
+										  dtype=np.float32)
 		self.action_memory = np.zeros(self.mem_size, dtype=np.int64)
 		self.reward_memory = np.zeros(self.mem_size, dtype=np.float32)
-		self.terminal_memory = np.zeros(self.mem_size, dtype=np.uint8)
+		self.terminal_memory = np.zeros(self.mem_size, dtype=bool)
 
 	def store_transition(self, state, action, reward, state_, done):
 		index = self.mem_cntr % self.mem_size

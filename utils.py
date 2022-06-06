@@ -5,12 +5,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import gym
 
-def plot_learning_curve(x, scores, epsilons, filename):
+def plot_learning_curve(x, scores, epsilons, filename, lines=None):
 	fig = plt.figure()
 
 	# make two parameters in a figure
-	ax = fig.add_subplot(111, label="1")	# scores agent recived
-	ax2 = fig.add_subplot(111, label="2", frame_on = False)	# epsilon
+	ax = fig.add_subplot(111, label="1")	# epsilon
+	ax2 = fig.add_subplot(111, label="2", frame_on = False)	# reward
 
 	ax.plot(x, epsilons, color = "C0")
 	ax.set_xlabel("Training Steps", color="C0")
@@ -29,6 +29,10 @@ def plot_learning_curve(x, scores, epsilons, filename):
 	ax2.set_ylabel('Score', color="C1")
 	ax2.yaxis.set_label_position('right')
 	ax2.tick_params(axis='y', colors="C1")
+
+	if lines is not None:
+		for line in lines:
+			plt.axvline(x=line)
 
 	plt.savefig(filename)
 
